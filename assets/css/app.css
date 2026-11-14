@@ -71,7 +71,8 @@ a { color: inherit; }
 
 img { max-width: 100%; display: block; }
 
-button, input, textarea, select { font: inherit; color: inherit; }
+button { font: inherit; cursor: pointer; }
+input, textarea, select { font: inherit; color: var(--ink); background: #fff; }
 button { cursor: pointer; }
 
 code, kbd, pre { font-family: var(--font-mono); }
