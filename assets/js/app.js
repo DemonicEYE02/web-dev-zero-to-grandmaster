@@ -1782,7 +1782,7 @@ function renderCertificate() {
             <div class="card" style="padding:18px;">
               <div class="field">
                 <label for="cert-name">Name on certificate</label>
-                <input id="cert-name" value="${attr(name)}" maxlength="40">
+                <input id="cert-name" value="${attr(name)}" maxlength="40" style="color:#152033;background:#fff;">
                 <span class="hint">Use your full name.</span>
               </div>
               <div class="btn-row" style="margin-top:12px;">
@@ -2025,7 +2025,7 @@ function renderSettings() {
             <h2>Profile</h2>
             <p class="muted" style="font-size:0.85rem;">Learning as <strong>${esc(currentProfile || "Guest")}</strong>. Switch to another name to keep separate progress.</p>
             <div class="btn-row" style="margin-top:10px;">
-              <input id="switch-profile" type="text" placeholder="New or existing name" maxlength="24" style="flex:1;min-width:160px;padding:8px 10px;border:2px solid var(--ink);border-radius:9px;font:inherit;font-weight:700;">
+              <input id="switch-profile" type="text" placeholder="New or existing name" maxlength="24" style="flex:1;min-width:160px;padding:8px 10px;border:2px solid var(--ink);border-radius:9px;font:inherit;font-weight:700;color:#152033;background:#fff;">
               <button class="btn small" data-set="switch-profile">Switch</button>
             </div>
             <div id="profile-list-settings" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px;"></div>
@@ -2306,7 +2306,7 @@ function renderProfileGate() {
             <h1>Who is learning today?</h1>
             <p class="hero-sub">Enter your name to save your own progress. You can switch profiles later in Settings.</p>
             <div class="btn-row" style="margin-top:18px;">
-              <input id="profile-input" type="text" placeholder="Your name" maxlength="24" style="flex:1;min-width:180px;padding:10px 12px;border:2px solid var(--ink);border-radius:10px;font:inherit;font-weight:700;">
+              <input id="profile-input" type="text" placeholder="Your name" maxlength="24" style="flex:1;min-width:180px;padding:10px 12px;border:2px solid var(--ink);border-radius:10px;font:inherit;font-weight:700;color:#152033;background:#fff;">
               <button class="btn primary" id="profile-start">Start</button>
             </div>
             <div id="profile-list" style="margin-top:22px;display:flex;flex-wrap:wrap;gap:8px;"></div>
