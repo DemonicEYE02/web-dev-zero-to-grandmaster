@@ -1,6 +1,9 @@
 WEB DEV: ZERO TO GRANDMASTER
 Made by Aadarsh Joshi
 
+PUBLIC LINK
+https://demoniceye02.github.io/web-dev-zero-to-grandmaster/
+
 HOW TO START
 1. Keep all the files together in one folder.
 2. Double-click index.html.
