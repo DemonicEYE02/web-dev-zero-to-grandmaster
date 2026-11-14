@@ -18,6 +18,7 @@ const DEFAULT_STATE = {
   xp: 0,
   completedLessons: {},
   challengeProgress: {},
+  challengeRuns: {},
   quizScores: {},
   bosses: {},
   exam: { passed: false, score: 0, total: 0, date: null, attempts: 0, bestScore: 0 },
@@ -1054,6 +1055,7 @@ function initLessonInteractions(w, l, quizId) {
   document.querySelectorAll('[data-action="open-playground"]').forEach(btn => {
     btn.addEventListener("click", () => {
       state.pendingPlayground = { name: l.title + " starter", html: l.challenge.starter.html, css: l.challenge.starter.css, js: l.challenge.starter.js };
+      state.pendingChallengeLesson = l.id;
       saveState();
       navigate("#/playground");
     });
@@ -1235,6 +1237,7 @@ function renderPlayground() {
     delete state.pendingPlayground;
     saveState();
   }
+  const challengeLesson = state.pendingChallengeLesson ? findLesson(state.pendingChallengeLesson) : null;
   const name = state._pgName || "Untitled project";
   const html = state._pgHtml || "";
   const css = state._pgCss || "";
@@ -1250,6 +1253,24 @@ function renderPlayground() {
             <p>Write HTML, CSS and JavaScript, then press Run. Your code runs in a safe preview. Progress and snippets save in your browser.</p>
           </div>
         </div>
+
+        ${challengeLesson ? `
+        <div class="card" style="padding:16px 18px;margin-bottom:14px;border-left:6px solid var(--coral);">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+            <div>
+              <strong style="display:block;margin-bottom:2px;">Challenge: ${esc(challengeLesson.lesson.title)}</strong>
+              <p class="muted" style="margin:0;font-size:0.82rem;">${esc(challengeLesson.lesson.challenge.text)}</p>
+            </div>
+            <div class="btn-row">
+              <button class="btn small primary" data-pg="mark-challenge">I did it!</button>
+              <button class="btn small ghost" data-pg="clear-challenge">Clear challenge</button>
+            </div>
+          </div>
+          <ul style="margin:10px 0 0;padding-left:18px;color:var(--ink-2);font-size:0.82rem;">
+            ${challengeLesson.lesson.challenge.steps.map(s => `<li>${esc(s)}</li>`).join("")}
+          </ul>
+          <p class="muted" style="margin:8px 0 0;font-size:0.78rem;">Tip: run your code. If nothing breaks, the mission can complete automatically.</p>
+        </div>` : ""}
 
         <div class="pg-toolbar">
           <input class="name-input" id="pg-name" value="${attr(name)}" aria-label="Project name">
@@ -1306,6 +1327,8 @@ function renderPlayground() {
 }
 
 function initPlayground() {
+  const challengeLessonId = state.pendingChallengeLesson || null;
+  let runHadError = false;
   const htmlTa = document.getElementById("pg-html");
   const cssTa = document.getElementById("pg-css");
   const jsTa = document.getElementById("pg-js");
@@ -1376,12 +1399,32 @@ function initPlayground() {
     frame.srcdoc = buildSrcdoc(code);
     consoleEl.innerHTML = '<div class="c-empty">Running...</div>';
     document.getElementById("pg-status").textContent = "Preview updated.";
+    runHadError = false;
     // persist editors
     state._pgName = document.getElementById("pg-name").value;
     state._pgHtml = code.html;
     state._pgCss = code.css;
     state._pgJs = code.js;
     saveState();
+    if (challengeLessonId) {
+      setTimeout(() => {
+        if (!runHadError) {
+          const found = findLesson(challengeLessonId);
+          if (found && !state.completedLessons[found.lesson.id]) {
+            state.challengeProgress[found.lesson.id] = found.lesson.challenge.steps.map(() => true);
+            completeLesson(found.lesson.id);
+            toast("Challenge complete!", found.lesson.title, "good");
+            confettiBurst(80);
+            state.pendingChallengeLesson = null;
+            saveState();
+            const banner = document.querySelector("[data-pg='mark-challenge']")?.closest(".card");
+            if (banner) banner.innerHTML = "<strong style='color:var(--success);'>Challenge complete! Great job.</strong>";
+          }
+        } else {
+          toast("Check the console", "Fix the error and run again.", "bad");
+        }
+      }, 1200);
+    }
   }
   window._runPreview = runPreview;
 
@@ -1396,6 +1439,7 @@ function initPlayground() {
     if (!e.data || e.data.__pg !== true) return;
     if (e.source !== frame.contentWindow) return;
     const type = e.data.type;
+    if (type === "error") runHadError = true;
     const args = e.data.args || [];
     const line = document.createElement("div");
     line.className = "c-line " + (type === "error" ? "error" : type === "warn" ? "warn" : "");
@@ -1443,6 +1487,25 @@ function initPlayground() {
         document.getElementById("pg-name").value = "Untitled project";
         updateChars();
         runPreview();
+      }
+      if (action === "mark-challenge") {
+        if (!challengeLessonId) return;
+        const found = findLesson(challengeLessonId);
+        if (found && !state.completedLessons[found.lesson.id]) {
+          state.challengeProgress[found.lesson.id] = found.lesson.challenge.steps.map(() => true);
+          completeLesson(found.lesson.id);
+          toast("Challenge complete!", found.lesson.title, "good");
+          confettiBurst(80);
+        }
+        state.pendingChallengeLesson = null;
+        saveState();
+        const banner = btn.closest(".card");
+        if (banner) banner.innerHTML = "<strong style='color:var(--success);'>Challenge complete! Great job.</strong>";
+      }
+      if (action === "clear-challenge") {
+        state.pendingChallengeLesson = null;
+        saveState();
+        location.reload();
       }
       if (action === "fullscreen") {
         frame.requestFullscreen?.();
