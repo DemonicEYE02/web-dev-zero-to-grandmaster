@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Web Dev: Zero to Grandmaster - by Aadarsh Joshi</title>
+  <meta name="description" content="A friendly, hands-on web development course for beginners. Learn HTML, CSS, JavaScript, build real projects, and earn a certificate. Created by Aadarsh Joshi.">
+  <meta name="theme-color" content="#fbf6ea">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23152033'/%3E%3Cpath d='M23 20 12 32l11 12M41 20l11 12-11 12M36 16l-8 32' fill='none' stroke='%23ffd166' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="assets/css/app.css">
+</head>
+<body>
+  <a class="skip-link" href="#app">Skip to content</a>
+
+  <div class="site-shell">
+    <header class="topbar" id="topbar">
+      <a class="brand" href="#/home" aria-label="Web Dev Academy home">
+        <span class="brand-mark" aria-hidden="true">&lt;/&gt;</span>
+        <span class="brand-text">
+          <strong>Web Dev</strong>
+          <small>Zero to Grandmaster</small>
+        </span>
+      </a>
+
+      <nav class="main-nav" id="main-nav" aria-label="Main">
+        <a href="#/learn" data-nav="learn">Course</a>
+        <a href="#/playground" data-nav="playground">Playground</a>
+        <a href="#/samples" data-nav="samples">Sample sites</a>
+        <a href="#/exam" data-nav="exam">Final exam</a>
+        <a href="#/certificate" data-nav="certificate">Certificate</a>
+      </nav>
+
+      <div class="top-stats">
+        <a class="stat-chip" href="#/home" title="Your experience points">
+          <span class="stat-label">XP</span>
+          <strong id="top-xp">0</strong>
+        </a>
+        <a class="stat-chip" href="#/achievements" title="Your daily learning streak">
+          <span class="stat-label">Streak</span>
+          <strong id="top-streak">0</strong>
+        </a>
+      </div>
+
+      <button class="icon-btn menu-btn" id="menu-btn" aria-expanded="false" aria-controls="main-nav" aria-label="Open menu">
+        <span></span><span></span><span></span>
+      </button>
+    </header>
+
+    <main id="app" tabindex="-1"></main>
+
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <div class="footer-brand">
+          <span class="brand-mark small" aria-hidden="true">&lt;/&gt;</span>
+          <div>
+            <strong>Web Dev: Zero to Grandmaster</strong>
+            <p>A hands-on course for curious beginners. Built by <strong>Aadarsh Joshi</strong>.</p>
+          </div>
+        </div>
+        <div class="footer-links">
+          <a href="#/settings">Progress &amp; settings</a>
+          <a href="#/achievements">Badges</a>
+          <a href="#/about">About the course</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <div class="toast-stack" id="toasts" aria-live="polite" aria-atomic="false"></div>
+
+  <div class="confetti-layer" id="confetti-layer" aria-hidden="true">
+    <canvas id="confetti-canvas"></canvas>
+  </div>
+
+  <script src="assets/js/curriculum.js"></script>
+  <script src="assets/js/curriculum-2.js"></script>
+  <script src="assets/js/samples.js"></script>
+  <script src="assets/js/app.js"></script>
+</body>
+</html>
