@@ -28,8 +28,38 @@ const DEFAULT_STATE = {
   certificate: { code: null, date: null, name: "", score: 0 }
 };
 
-let state = loadState();
+let currentProfile = null;
+let state = null;
 let currentRoute = "home";
+
+function profileKey(name) {
+  return "wd-grandmaster-state::" + encodeURIComponent(String(name || "").trim().toLowerCase());
+}
+function listProfiles() {
+  const out = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k && k.startsWith("wd-grandmaster-state::")) {
+      try { out.push(decodeURIComponent(k.slice("wd-grandmaster-state::".length))); } catch (e) {}
+    }
+  }
+  return out.sort();
+}
+function migrateOldState() {
+  const old = localStorage.getItem("wd-grandmaster-state");
+  if (old && !localStorage.getItem("wd-grandmaster-profile")) {
+    localStorage.setItem("wd-grandmaster-profile", "Learner");
+    localStorage.setItem(profileKey("Learner"), old);
+    localStorage.removeItem("wd-grandmaster-state");
+  }
+}
+function loadStateFor(profile) {
+  try {
+    const raw = localStorage.getItem(profileKey(profile));
+    if (raw) return mergeState(structuredClone(DEFAULT_STATE), JSON.parse(raw));
+  } catch (e) {}
+  return structuredClone(DEFAULT_STATE);
+}
 let confettiPieces = [];
 let confettiRunning = false;
 let playgroundIframe = null;
@@ -37,16 +67,7 @@ let guideTargetEl = null;
 
 /* ----------------------------- State helpers ----------------------------- */
 
-function loadState() {
-  try {
-    const raw = localStorage.getItem("wd-grandmaster-state");
-    if (!raw) return structuredClone(DEFAULT_STATE);
-    const parsed = JSON.parse(raw);
-    return mergeState(structuredClone(DEFAULT_STATE), parsed);
-  } catch (e) {
-    return structuredClone(DEFAULT_STATE);
-  }
-}
+function loadState(profile) { return loadStateFor(profile); }
 
 function mergeState(base, incoming) {
   if (!incoming || typeof incoming !== "object") return base;
@@ -61,7 +82,8 @@ function mergeState(base, incoming) {
 }
 
 function saveState() {
-  try { localStorage.setItem("wd-grandmaster-state", JSON.stringify(state)); } catch (e) {}
+  if (!currentProfile) return;
+  try { localStorage.setItem(profileKey(currentProfile), JSON.stringify(state)); } catch (e) {}
 }
 
 function findWorld(id) { return COURSE.worlds.find(w => w.id === id); }
@@ -428,6 +450,7 @@ function renderHome() {
               <a href="#/samples" class="btn ghost">See sample sites</a>
             </div>
             <div class="hero-meta">
+              <span><i></i> Profile: ${esc(currentProfile || "Guest")}</span>
               <span><i></i> ${COURSE.worlds.length} worlds</span>
               <span><i></i> ${total} missions</span>
               <span><i></i> 6 sample sites</span>
@@ -1999,6 +2022,15 @@ function renderSettings() {
 
         <div class="settings-grid">
           <div class="card settings-card">
+            <h2>Profile</h2>
+            <p class="muted" style="font-size:0.85rem;">Learning as <strong>${esc(currentProfile || "Guest")}</strong>. Switch to another name to keep separate progress.</p>
+            <div class="btn-row" style="margin-top:10px;">
+              <input id="switch-profile" type="text" placeholder="New or existing name" maxlength="24" style="flex:1;min-width:160px;padding:8px 10px;border:2px solid var(--ink);border-radius:9px;font:inherit;font-weight:700;">
+              <button class="btn small" data-set="switch-profile">Switch</button>
+            </div>
+            <div id="profile-list-settings" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px;"></div>
+          </div>
+          <div class="card settings-card">
             <h2>Preferences</h2>
             <div class="switch-row">
               <div><strong>Sound effects</strong><p class="muted" style="margin:0;font-size:0.8rem;">Small beeps for success and errors.</p></div>
@@ -2034,6 +2066,33 @@ function renderSettings() {
       </div>
     </div>
   `, () => {
+    const switchInput = document.getElementById("switch-profile");
+    const switchBtn = document.querySelector("[data-set='switch-profile']");
+    const plist = document.getElementById("profile-list-settings");
+    if (plist) {
+      const profs = listProfiles();
+      plist.innerHTML = profs.map(p => `<button class="btn small ghost" data-switch="${encodeURIComponent(p)}">${esc(p)}</button>`).join("");
+      plist.querySelectorAll("[data-switch]").forEach(b => {
+        b.addEventListener("click", () => {
+          switchProfile(decodeURIComponent(b.dataset.switch));
+        });
+      });
+    }
+    function switchProfile(name) {
+      name = (name || "").trim();
+      if (!name) return;
+      saveState();
+      currentProfile = name;
+      localStorage.setItem("wd-grandmaster-profile", name);
+      state = loadStateFor(name);
+      if (!state.studentName) state.studentName = name;
+      saveState();
+      toast("Profile switched", "Now learning as " + name + ".", "good");
+      setTimeout(() => { handleRoute(); }, 200);
+    }
+    if (switchBtn) switchBtn.addEventListener("click", () => switchProfile(switchInput.value));
+    if (switchInput) switchInput.addEventListener("keydown", (e) => { if (e.key === "Enter") switchProfile(switchInput.value); });
+
     document.getElementById("set-sound").addEventListener("change", (e) => { state.settings.sound = e.target.checked; saveState(); });
     document.getElementById("set-motion").addEventListener("change", (e) => { state.settings.motion = e.target.checked; saveState(); });
     document.getElementById("set-guide").addEventListener("change", (e) => { state.settings.guide = e.target.checked; saveState(); updateGuide(currentRoute); });
@@ -2228,13 +2287,77 @@ mainNav.addEventListener("click", (e) => {
 
 /* ----------------------------- Init ----------------------------- */
 
-touchStreak();
-checkBadges(true);
-updateTopStats();
+migrateOldState();
+currentProfile = localStorage.getItem("wd-grandmaster-profile");
+if (currentProfile) {
+  state = loadStateFor(currentProfile);
+  if (!state.studentName && currentProfile !== "Learner") state.studentName = currentProfile;
+} else {
+  state = structuredClone(DEFAULT_STATE);
+}
 
-if (!location.hash) location.hash = "#/home";
-window.addEventListener("hashchange", handleRoute);
-handleRoute();
+function renderProfileGate() {
+  app.innerHTML = `
+    <div class="page">
+      <div class="wrap">
+        <div class="hero" style="grid-template-columns:1fr;max-width:760px;margin:40px auto 0;">
+          <div>
+            <div class="eyebrow">Welcome</div>
+            <h1>Who is learning today?</h1>
+            <p class="hero-sub">Enter your name to save your own progress. You can switch profiles later in Settings.</p>
+            <div class="btn-row" style="margin-top:18px;">
+              <input id="profile-input" type="text" placeholder="Your name" maxlength="24" style="flex:1;min-width:180px;padding:10px 12px;border:2px solid var(--ink);border-radius:10px;font:inherit;font-weight:700;">
+              <button class="btn primary" id="profile-start">Start</button>
+            </div>
+            <div id="profile-list" style="margin-top:22px;display:flex;flex-wrap:wrap;gap:8px;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  const list = document.getElementById("profile-list");
+  const profiles = listProfiles();
+  if (profiles.length) {
+    list.innerHTML = "<p class='muted' style='width:100%;margin:0 0 6px;'>Existing profiles:</p>" + profiles.map(p => `<button class="btn small" data-profile="${encodeURIComponent(p)}">${esc(p)}</button>`).join("");
+    list.querySelectorAll("[data-profile]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        selectProfile(decodeURIComponent(btn.dataset.profile));
+      });
+    });
+  }
+  const start = () => {
+    const name = document.getElementById("profile-input").value.trim();
+    if (!name) { toast("Enter a name", "Type your name to continue.", "bad"); return; }
+    selectProfile(name);
+  };
+  document.getElementById("profile-start").addEventListener("click", start);
+  document.getElementById("profile-input").addEventListener("keydown", (e) => { if (e.key === "Enter") start(); });
+}
+
+function selectProfile(name) {
+  currentProfile = name;
+  localStorage.setItem("wd-grandmaster-profile", name);
+  state = loadStateFor(name);
+  if (!state.studentName) state.studentName = name;
+  saveState();
+  touchStreak();
+  checkBadges(true);
+  updateTopStats();
+  if (!location.hash || location.hash === "#/") location.hash = "#/home";
+  window.addEventListener("hashchange", handleRoute);
+  handleRoute();
+}
+
+if (currentProfile) {
+  touchStreak();
+  checkBadges(true);
+  updateTopStats();
+  if (!location.hash) location.hash = "#/home";
+  window.addEventListener("hashchange", handleRoute);
+  handleRoute();
+} else {
+  renderProfileGate();
+}
 
 // Pip widget is in DOM? Inject if not present
 if (!document.getElementById("guide-widget")) {
