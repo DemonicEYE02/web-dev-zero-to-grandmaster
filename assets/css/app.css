@@ -1423,6 +1423,149 @@ a.world-card:active { transform: translate(2px, 2px); box-shadow: 3px 3px 0 var(
   .guide-highlight { display: none !important; }
 }
 
+/* ----------------------------- Fun & addictive juice ----------------------------- */
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(255, 107, 87, 0.10), transparent 38%),
+    radial-gradient(circle at 85% 75%, rgba(31, 185, 166, 0.10), transparent 42%),
+    radial-gradient(circle at 50% 50%, rgba(255, 209, 102, 0.06), transparent 60%);
+  animation: bg-drift 22s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+@keyframes bg-drift {
+  from { transform: translate(-1.5%, -1%) scale(1); }
+  to { transform: translate(1.5%, 1%) scale(1.04); }
+}
+
+.btn {
+  position: relative;
+  overflow: hidden;
+}
+.btn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at var(--rx, 50%) var(--ry, 50%), rgba(255,255,255,0.35), transparent 55%);
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+.btn:active::after { opacity: 1; }
+
+.card, .panel, .world-card, .sample-card, .badge-card {
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.world-card:hover, .sample-card:hover {
+  transform: translate(-3px, -4px) rotate(-0.4deg);
+}
+
+.reward-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 260;
+  display: grid;
+  place-items: center;
+  background: rgba(21, 32, 51, 0.42);
+  backdrop-filter: blur(6px);
+  animation: reward-in 220ms ease both;
+}
+.reward-overlay.out { animation: reward-out 260ms ease forwards; }
+
+.reward-card {
+  background: var(--paper-2);
+  border: 3px solid var(--ink);
+  border-radius: 26px;
+  padding: 34px 44px;
+  text-align: center;
+  box-shadow: 10px 10px 0 var(--ink);
+  animation: reward-pop 460ms cubic-bezier(.2, .9, .25, 1.25) both;
+  max-width: min(420px, 90vw);
+}
+.reward-card h2 {
+  margin: 10px 0 6px;
+  font-size: clamp(1.6rem, 4vw, 2.2rem);
+}
+.reward-card p {
+  color: var(--ink-2);
+  margin: 0;
+  font-weight: 700;
+}
+
+.reward-icon {
+  width: 84px;
+  height: 84px;
+  margin: 0 auto 10px;
+  border-radius: 50%;
+  background: var(--yellow);
+  border: 3px solid var(--ink);
+  box-shadow: 5px 5px 0 var(--ink);
+  display: grid;
+  place-items: center;
+  font-size: 2.4rem;
+  font-weight: 800;
+  animation: icon-spin 620ms cubic-bezier(.2, .8, .2, 1.2);
+}
+
+@keyframes reward-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes reward-out {
+  to { opacity: 0; }
+}
+@keyframes reward-pop {
+  from { opacity: 0; transform: scale(0.7) translateY(20px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes icon-spin {
+  from { transform: rotate(-180deg) scale(0.4); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+.pip-happy {
+  animation: pip-happy 1s ease !important;
+}
+@keyframes pip-happy {
+  0% { transform: scale(1); }
+  25% { transform: scale(1.25) rotate(-8deg); }
+  50% { transform: scale(1.25) rotate(8deg); }
+  75% { transform: scale(1.1) rotate(-4deg); }
+  100% { transform: scale(1); }
+}
+
+.progress > span {
+  position: relative;
+  overflow: hidden;
+}
+.progress > span::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.55), transparent);
+  animation: shine 2.4s linear infinite;
+}
+@keyframes shine {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(100%); }
+}
+
+.toast {
+  animation: toast-in 260ms cubic-bezier(.2, .8, .2, 1.1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body::after { animation: none; }
+  .reward-overlay, .reward-card, .reward-icon { animation: none; }
+  .progress > span::after { animation: none; }
+  .pip-happy { animation: none; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .guide-avatar { animation: none; }
   .guide-highlight { animation: none; }

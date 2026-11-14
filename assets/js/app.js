@@ -245,12 +245,48 @@ function confettiTick() {
 }
 
 function addXP(amount, reason) {
+  const beforeRank = rankFor(state.xp).name;
   state.xp += amount;
+  const afterRank = rankFor(state.xp).name;
   saveState();
   updateTopStats();
   toast("+" + amount + " XP", reason, "good");
   playSound("success");
+  if (afterRank !== beforeRank) {
+    showReward("Rank up!", "You are now a " + afterRank + ".", "▲");
+  }
   checkBadges(false);
+}
+
+function showReward(title, subtitle, icon) {
+  if (!state.settings.motion) {
+    toast(title, subtitle, "good");
+    return;
+  }
+  const overlay = document.createElement("div");
+  overlay.className = "reward-overlay";
+  overlay.innerHTML = `
+    <div class="reward-card">
+      <div class="reward-icon">${esc(icon)}</div>
+      <h2>${esc(title)}</h2>
+      <p>${esc(subtitle)}</p>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  pipCelebrate();
+  setTimeout(() => {
+    overlay.classList.add("out");
+    setTimeout(() => overlay.remove(), 320);
+  }, 1700);
+}
+
+function pipCelebrate() {
+  const avatar = document.getElementById("guide-avatar");
+  if (!avatar) return;
+  avatar.classList.remove("pip-happy");
+  void avatar.offsetWidth;
+  avatar.classList.add("pip-happy");
+  setTimeout(() => avatar.classList.remove("pip-happy"), 1100);
 }
 
 function completeLesson(lessonId) {
@@ -260,6 +296,8 @@ function completeLesson(lessonId) {
   state.completedLessons[lessonId] = true;
   saveState();
   addXP(found.lesson.xp, "Mission complete: " + found.lesson.title);
+  showReward("Mission complete", found.lesson.title, "✓");
+  confettiBurst(70);
   return true;
 }
 
@@ -273,6 +311,7 @@ function completeBoss(worldId, score, total) {
   };
   if (passed && !prev.passed) {
     addXP(50, "Boss defeated: " + findWorld(worldId).title);
+    showReward("Boss defeated!", findWorld(worldId).title, "⚔");
     confettiBurst(160);
   }
   saveState();
@@ -302,6 +341,7 @@ function completeExam(score, total) {
       state.xp += 0;
     }
     confettiBurst(220);
+    showReward("Grandmaster unlocked!", "You passed the final exam.", "★");
   }
   saveState();
   checkBadges(false);
