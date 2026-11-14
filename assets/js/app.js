@@ -17,6 +17,7 @@ const DEFAULT_STATE = {
   studentName: "",
   xp: 0,
   completedLessons: {},
+  challengeProgress: {},
   quizScores: {},
   bosses: {},
   exam: { passed: false, score: 0, total: 0, date: null, attempts: 0, bestScore: 0 },
@@ -816,9 +817,23 @@ function renderLesson(worldId, lessonId) {
                 </div>
                 <div class="ch-body">
                   <p>${esc(l.challenge.text)}</p>
-                  <ul class="ch-checks">
-                    ${l.challenge.steps.map(step => `<li>${esc(step)}</li>`).join("")}
+                  <p class="muted" style="font-size:0.82rem;margin:0 0 10px;"><strong>How to finish:</strong> do each step, then tick it. When all are ticked, the mission completes.</p>
+                  <ul class="ch-checks" id="challenge-${l.id}">
+                    ${l.challenge.steps.map((step, i) => {
+                      const checked = !!(state.challengeProgress[l.id] && state.challengeProgress[l.id][i]);
+                      return `<li class="${checked ? "done" : ""}">
+                        <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;">
+                          <input type="checkbox" data-challenge="${l.id}" data-step="${i}" ${checked ? "checked" : ""} style="margin-top:4px;">
+                          <span>${esc(step)}</span>
+                        </label>
+                      </li>`;
+                    }).join("")}
                   </ul>
+                  <div class="btn-row" style="margin-top:12px;">
+                    <button class="btn primary small" data-action="open-playground" data-lesson="${l.id}">Try it in playground</button>
+                    <button class="btn ghost small" data-action="copy-challenge" data-lesson="${l.id}">Copy starter code</button>
+                    <button class="btn ghost small" data-action="reset-challenge" data-lesson="${l.id}">Reset checklist</button>
+                  </div>
                   <div class="btn-row">
                     <button class="btn primary small" data-action="open-playground" data-lesson="${l.id}">Open in playground</button>
                     <button class="btn ghost small" data-action="copy-challenge" data-lesson="${l.id}">Copy starter code</button>
@@ -838,7 +853,9 @@ function renderLesson(worldId, lessonId) {
                   `).join("")}
                 </div>
                 <div class="quiz-feedback" id="qfb-${l.id}" style="display:none;"></div>
-                ${done ? `<div style="margin-top:12px;"><button class="btn primary" data-action="complete-lesson" data-lesson="${l.id}">Mark complete again</button></div>` : `<div style="margin-top:12px;"><button class="btn primary" id="complete-btn-${l.id}" style="display:none;" data-action="complete-lesson" data-lesson="${l.id}">Complete mission</button></div>`}
+                <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
+                  ${done ? `<button class="btn primary small" data-action="complete-lesson" data-lesson="${l.id}">Mark complete again</button>` : `<button class="btn ghost small" data-action="complete-lesson" data-lesson="${l.id}">Mark mission complete</button>`}
+                </div>
               </div>
             </div>
 
@@ -968,13 +985,14 @@ function initLessonInteractions(w, l, quizId) {
         fb.className = "quiz-feedback good";
         fb.innerHTML = "<strong>Correct!</strong>" + esc(l.quiz.why);
         state.quizScores[l.id] = { score: 1, total: 1 };
-        const cbtn = document.getElementById("complete-btn-" + l.id);
-        if (cbtn) cbtn.style.display = "";
+        state.challengeProgress[l.id] = l.challenge.steps.map(() => true);
+        saveState();
         playSound("success");
         if (!state.completedLessons[l.id]) {
           completeLesson(l.id);
-          const cbtn2 = document.getElementById("complete-btn-" + l.id);
-          if (cbtn2) cbtn2.style.display = "none";
+          toast("Mission complete", l.title, "good");
+          confettiBurst(70);
+          renderLesson(worldId, lessonId);
         }
       } else {
         fb.className = "quiz-feedback bad";
@@ -988,12 +1006,46 @@ function initLessonInteractions(w, l, quizId) {
     });
   });
 
+  // challenge checkboxes
+  document.querySelectorAll(`[data-challenge="${l.id}"]`).forEach(cb => {
+    cb.addEventListener("change", () => {
+      const step = Number(cb.dataset.step);
+      if (!state.challengeProgress[l.id]) {
+        state.challengeProgress[l.id] = new Array(l.challenge.steps.length).fill(false);
+      }
+      state.challengeProgress[l.id][step] = cb.checked;
+      const li = cb.closest("li");
+      if (li) li.classList.toggle("done", cb.checked);
+      saveState();
+      const progress = state.challengeProgress[l.id];
+      const allDone = progress.length === l.challenge.steps.length && progress.every(Boolean);
+      if (allDone && !state.completedLessons[l.id]) {
+        completeLesson(l.id);
+        toast("Mission complete", l.title, "good");
+        confettiBurst(70);
+        renderLesson(worldId, lessonId);
+      }
+    });
+  });
+
+  document.querySelectorAll('[data-action="reset-challenge"]').forEach(btn => {
+    btn.addEventListener("click", () => {
+      state.challengeProgress[l.id] = new Array(l.challenge.steps.length).fill(false);
+      saveState();
+      renderLesson(worldId, lessonId);
+    });
+  });
+
   // complete lesson button
   document.querySelectorAll('[data-action="complete-lesson"]').forEach(btn => {
     btn.addEventListener("click", () => {
-      completeLesson(btn.dataset.lesson);
-      toast("Mission complete", l.title, "good");
-      confettiBurst(80);
+      const newly = completeLesson(btn.dataset.lesson);
+      if (newly) {
+        toast("Mission complete", l.title, "good");
+        confettiBurst(80);
+      } else {
+        toast("Already complete", l.title, "good");
+      }
       renderLesson(worldId, lessonId);
     });
   });
